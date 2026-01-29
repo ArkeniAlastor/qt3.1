@@ -15,6 +15,9 @@ const int SIZE = 100;
 
 int arr[SIZE];
 
+atomic <int> counter_even{ 0 };
+atomic <int> counter_negative{ 0 };
+
 void initializeArray() {
 	for (int i = 0; i < SIZE; ++i) {
 		arr[i] = rand() % 41 - 20; // Случайные числа от -20 до +20
@@ -28,38 +31,33 @@ void printArray() {
 	cout << endl;
 }
 
-void countEvenElements(atomic<int>& counter) {
+void countEvenElements() {
 	for (int i = 0; i < SIZE; ++i) {
 		if (arr[i] % 2 == 0) {
-			counter.fetch_add(1, memory_order_relaxed);
+			counter_even.fetch_add(1);
 		}
 	}
 }
 
-void countNegativeElements(atomic<int>& counter) {
+void countNegativeElements() {
 	for (int i = 0; i < SIZE; ++i) {
 		if (arr[i] < 0) {
-			counter.fetch_add(1, memory_order_relaxed);
+			counter_negative.fetch_add(1);
 		}
 	}
 }
 
 int main() {
-	srand(static_cast<unsigned int>(time(0)));
+	srand(time(0));
 	initializeArray();
 	printArray();
 
-	atomic<int> counterEven{ 0 };
-	atomic<int> counterNegative{ 0 };
-
-	thread t1(countEvenElements, ref(counterEven));
-	thread t2(countNegativeElements, ref(counterNegative));
+	thread t1(countEvenElements);
+	thread t2(countNegativeElements);
 
 	t1.join();
 	t2.join();
 
-	cout << "Number of even elements: " << counterEven.load() << endl;
-	cout << "Number of negative elements: " << counterNegative.load() << endl;
-
-	return 0;
+	cout << "Number of even elements: " << counter_even.load() << endl;
+	cout << "Number of negative elements: " << counter_negative.load() << endl;
 }
